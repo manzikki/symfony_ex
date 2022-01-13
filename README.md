@@ -70,9 +70,7 @@ class PersonController extends AbstractController
         $entityManager = $doctrine->getManager();
         $per = new Person();
         $per->setName('John');
-        // tell Doctrine you want to (eventually) save the Product (no queries yet)
         $entityManager->persist($per);
-        // actually executes the queries (i.e. the INSERT query)
         $entityManager->flush();
         return new Response('Saved new person with id '.$per->getId());
     }
@@ -80,6 +78,65 @@ class PersonController extends AbstractController
 
 Start the server in public (php -S 0.0.0.0:8000) and with your browser go to http://localhost:8000/newperson
 You should get a response "Saved new person with id 1"
+
+6. Creating a form and getting a name that we'll persist
+
+In the previous example we always stored a person named John. Let's improve the code so that we can provide a
+name for the person that we'll store in the database.
+
+This task needs several components: a form in which we type the name and something in the controller that can 
+1 Show the form
+2 Get the input from the form.
+
+The form should go to a file called templates/person/index.html.twig and it looks like this:
+
+{% extends 'base.html.twig' %}
+
+{% block title %}Please enter new person data{% endblock %}
+
+{% block body %}
+<form action="/newperson">
+    <input type="text" name="pname" required>
+    <input type="submit" value="Submit">
+</form>
+{% endblock %}
+
+
+We should show this form when the user accesses an URL. So let's add this in the beginning of the 
+PersonController class
+
+class PersonController extends AbstractController
+{
+    /**
+     * @Route("/person", name="show_person_form")
+     */
+    public function index(): Response
+    {
+        return $this->render('person/index.html.twig');
+    }
+     
+Test by using "/person" at the end of the URL with your browser. It kind of works but always stores
+a person named John. So let's change the "newperson" function:
+
+    /**
+     * @Route("/newperson", name="new_person")
+     */
+    public function newPerson(ManagerRegistry $doctrine, Request $request): Response
+    {
+        $entityManager = $doctrine->getManager();
+        //collect the information from the form
+        $pname = "";
+        if ($request->get('pname') !== null) {
+            $pname = $request->get('pname');
+        }
+        if ($pname == "") { return new Response('Empty name!'); }
+        $per = new Person();
+        $per->setName($pname);
+        $entityManager->persist($per);
+        $entityManager->flush();
+        return new Response('Saved new person '.$pname.' with id '.$per->getId());
+    }
+
 
 
 
